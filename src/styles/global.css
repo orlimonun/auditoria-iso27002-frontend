@@ -1,0 +1,32 @@
+@import './variables.css';
+@import './layout.css';
+@import './login.css';
+@import './dashboard.css';
+@import './table.css';
+@import './drawer.css';
+@import './wizard.css';
+@import './resultados.css';
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.mono {
+    font-family: var(--font-mono);
+}

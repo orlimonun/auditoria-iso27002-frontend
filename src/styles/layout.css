@@ -1,0 +1,194 @@
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    transition: background 0.2s, color 0.2s;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.sidebar-brand {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 16px;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 12px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 0.9rem;
+    transition: all 0.15s;
+}
+
+.sidebar-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.sidebar-link.active {
+    background: rgba(180, 144, 255, 0.1);
+    color: var(--violet);
+}
+
+.sidebar-icon {
+    font-size: 0.85rem;
+    width: 18px;
+    text-align: center;
+}
+
+.sidebar-footer {
+    padding: 16px 20px 0;
+    border-top: 1px solid var(--line);
+    margin-top: 12px;
+}
+
+.theme-toggle {
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 12px;
+}
+
+.theme-toggle:hover {
+    border-color: var(--violet);
+    color: var(--violet);
+}
+
+.sidebar-user {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 12px;
+}
+
+.sidebar-role {
+    font-size: 0.72rem;
+    color: var(--violet);
+    text-transform: uppercase;
+}
+
+.sidebar-logout {
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.sidebar-logout:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+}
+
+/* Content */
+.app-content {
+    flex: 1;
+    padding: 36px 40px;
+    min-width: 0; /* evita que el contenido empuje el layout en pantallas angostas */
+}
+
+.app-content h1 {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 768px) {
+    .app-shell {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        padding: 10px 14px;
+        gap: 12px;
+        overflow-x: auto;
+    }
+
+    .sidebar-brand {
+        padding: 0;
+        border-bottom: none;
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .sidebar-nav {
+        flex: none;
+        flex-direction: row;
+        padding: 0;
+        gap: 4px;
+    }
+
+    .sidebar-link {
+        white-space: nowrap;
+        padding: 8px 10px;
+    }
+
+    .sidebar-footer {
+        border-top: none;
+        margin-top: 0;
+        padding: 0;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sidebar-user {
+        display: none; /* ahorra espacio en móvil; el nombre no es crítico ahí */
+    }
+
+    .theme-toggle,
+    .sidebar-logout {
+        width: auto;
+        white-space: nowrap;
+        margin-bottom: 0;
+        padding: 8px 10px;
+    }
+
+    .app-content {
+        padding: 20px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-content h1 {
+        font-size: 1.3rem;
+    }
+}

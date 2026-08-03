@@ -1,0 +1,51 @@
+:root {
+    /* Base — tema oscuro (default) */
+    --bg: #0a0e17;
+    --bg-2: #0f1420;
+    --surface: #121826;
+    --surface-2: #161d2e;
+    --line: rgba(228, 232, 241, 0.09);
+    --text: #e4e8f1;
+    --muted: #7c8699;
+
+    /* Acentos */
+    --violet: #b490ff;
+    --green: #4ade80;
+    --blue: #60a5fa;
+    --amber: #fbbf24;
+
+    /* Riesgo (mapa de calor / indicadores) */
+    --risk-low: #4ade80;
+    --risk-mid: #fbbf24;
+    --risk-high: #f87171;
+    --risk-critical: #dc2626;
+
+    /* Tipografía */
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Space Grotesk', sans-serif;
+
+    /* Radios y espaciado reutilizable */
+    --radius: 8px;
+    --radius-sm: 6px;
+}
+
+/* Tema claro */
+body[data-theme='light'] {
+    --bg: #f5f6fa;
+    --bg-2: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #eef0f6;
+    --line: rgba(15, 20, 32, 0.1);
+    --text: #12151f;
+    --muted: #5c6479;
+
+    --violet: #7c3aed;
+    --green: #16a34a;
+    --blue: #2563eb;
+    --amber: #b45309;
+
+    --risk-low: #16a34a;
+    --risk-mid: #b45309;
+    --risk-high: #dc2626;
+    --risk-critical: #991b1b;
+}

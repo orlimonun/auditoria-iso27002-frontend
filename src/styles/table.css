@@ -1,0 +1,135 @@
+.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.btn-primary-sm {
+    background: var(--violet);
+    color: #12081f;
+    font-weight: 600;
+    font-size: 0.78rem;
+    padding: 10px 18px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-primary-sm:hover {
+    background: #c7a8ff;
+}
+
+.inline-form {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field label {
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+.form-field input,
+.form-field select {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    outline: none;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+    border-color: var(--violet);
+}
+
+.table-wrap {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto; /* permite scroll horizontal en pantallas angostas en vez de romper el layout */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    background: var(--surface-2);
+}
+
+th {
+    text-align: left;
+    padding: 12px 18px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+td {
+    padding: 14px 18px;
+    font-size: 0.86rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.cell-strong {
+    font-weight: 600;
+}
+
+.btn-danger {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-danger:hover {
+    border-color: #f87171;
+    color: #f87171;
+}
+
+@media (max-width: 640px) {
+    table {
+        min-width: 620px; /* fuerza el scroll horizontal en vez de comprimir columnas ilegibles */
+    }
+
+    th,
+    td {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
