@@ -1,4 +1,7 @@
-const API_URL = 'http://localhost:8080/api';
+// La URL del backend se toma de la variable de entorno VITE_API_URL.
+// - En local: si no existe la variable, usa localhost:8080 (desarrollo).
+// - En Render: se define VITE_API_URL con la URL publica del backend.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 function getToken() {
     return localStorage.getItem('token');
