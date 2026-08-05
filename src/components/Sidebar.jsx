@@ -1,14 +1,14 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 const links = [
-    { to: '/', label: 'Dashboard', icon: '◈' },
-    { to: '/organizaciones', label: 'Organizaciones', icon: '⌘' },
-    { to: '/controles', label: 'Controles ISO', icon: '☰' },
-    { to: '/auditorias', label: 'Auditorías', icon: '✓' },
-    { to: '/resultados', label: 'Resultados', icon: '▤' },
-    { to: '/historico', label: 'Histórico', icon: '↗' },
+    { to: '/app', label: 'Dashboard', icon: '◈', end: true },
+    { to: '/app/organizaciones', label: 'Organizaciones', icon: '⌘' },
+    { to: '/app/controles', label: 'Controles ISO', icon: '☰' },
+    { to: '/app/auditorias', label: 'Auditorías', icon: '✓' },
+    { to: '/app/resultados', label: 'Resultados', icon: '▤' },
+    { to: '/app/historico', label: 'Histórico', icon: '↗' },
 ];
 
 export default function Sidebar() {
@@ -17,16 +17,16 @@ export default function Sidebar() {
 
     return (
         <aside className="sidebar">
-            <div className="sidebar-brand mono">
+            <Link to="/" className="sidebar-brand mono">
                 <span style={{ color: 'var(--green)' }}>&gt;_</span> ISO27002
-            </div>
+            </Link>
 
             <nav className="sidebar-nav">
                 {links.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
-                        end={link.to === '/'}
+                        end={link.end}
                         className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                     >
                         <span className="sidebar-icon mono">{link.icon}</span>
@@ -36,7 +36,7 @@ export default function Sidebar() {
 
                 {user?.rol === 'admin' && (
                     <NavLink
-                        to="/usuarios"
+                        to="/app/usuarios"
                         className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
                     >
                         <span className="sidebar-icon mono">◎</span>

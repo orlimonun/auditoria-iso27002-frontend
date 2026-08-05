@@ -6,6 +6,7 @@
 @import './drawer.css';
 @import './wizard.css';
 @import './resultados.css';
+@import './landing.css';
 
 * {
     box-sizing: border-box;

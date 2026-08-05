@@ -31,7 +31,6 @@ export default function Dashboard() {
                 setAuditorias(dataAuditorias);
                 setOrganizaciones(dataOrganizaciones);
 
-                // Promedios generales: calculados sobre las auditorias que ya tienen datos
                 if (dataAuditorias.length > 0) {
                     const resultados = await Promise.all(
                         dataAuditorias.map((a) => getResultados(a.id).catch(() => null))
@@ -107,7 +106,7 @@ export default function Dashboard() {
             <div className="section-block">
                 <div className="section-block-head">
                     <h2>Auditorías recientes</h2>
-                    <button className="btn-ghost mono" onClick={() => navigate('/auditorias')}>
+                    <button className="btn-ghost mono" onClick={() => navigate('/app/auditorias')}>
                         Ver todas
                     </button>
                 </div>
@@ -130,7 +129,7 @@ export default function Dashboard() {
                 </span>
                             </div>
 
-                            <button className="btn-ghost mono" onClick={() => navigate(`/auditorias/${a.id}`)}>
+                            <button className="btn-ghost mono" onClick={() => navigate(`/app/auditorias/${a.id}`)}>
                                 Ver
                             </button>
                         </div>

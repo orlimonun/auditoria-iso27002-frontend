@@ -72,7 +72,7 @@ export default function AuditoriaWizard() {
             <div>
                 <h1>Auditoría no encontrada</h1>
                 {error && <p style={{ color: 'var(--risk-high)' }}>{error}</p>}
-                <button className="btn-ghost mono" onClick={() => navigate('/auditorias')}>
+                <button className="btn-ghost mono" onClick={() => navigate('/app/auditorias')}>
                     Volver a Auditorías
                 </button>
             </div>
@@ -122,7 +122,7 @@ export default function AuditoriaWizard() {
         setFinalizando(true);
         try {
             await finalizarAuditoria(auditoriaId);
-            navigate('/auditorias');
+            navigate('/app/auditorias');
         } catch (err) {
             setError('No se pudo finalizar la auditoría.');
         } finally {
@@ -142,7 +142,7 @@ export default function AuditoriaWizard() {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="btn-ghost mono" onClick={() => navigate('/auditorias')}>
+                    <button className="btn-ghost mono" onClick={() => navigate('/app/auditorias')}>
                         Guardar y salir
                     </button>
                     {auditoria.estado !== 'FINALIZADA' && (

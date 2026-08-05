@@ -16,7 +16,7 @@ export default function Login() {
         setCargando(true);
         try {
             await login(email, password);
-            navigate('/');
+            navigate('/app');
         } catch (err) {
             setError('Correo o contraseña incorrectos');
         } finally {

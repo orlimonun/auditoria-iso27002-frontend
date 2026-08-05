@@ -42,7 +42,7 @@ export default function Auditorias() {
             const nueva = await crearAuditoria(Number(organizacionId));
             setShowForm(false);
             setOrganizacionId('');
-            navigate(`/auditorias/${nueva.id}`);
+            navigate(`/app/auditorias/${nueva.id}`);
         } catch (err) {
             setError('No se pudo crear la auditoría.');
         } finally {
@@ -120,7 +120,7 @@ export default function Auditorias() {
                     </span>
                                 </td>
                                 <td>
-                                    <button className="btn-ghost mono" onClick={() => navigate(`/auditorias/${a.id}`)}>
+                                    <button className="btn-ghost mono" onClick={() => navigate(`/app/auditorias/${a.id}`)}>
                                         {a.estado === 'FINALIZADA' ? 'Ver' : 'Continuar'}
                                     </button>
                                 </td>
