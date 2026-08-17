@@ -184,3 +184,43 @@
         flex-wrap: wrap;
     }
 }
+.wizard-madurez {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.wizard-madurez-label {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.wizard-madurez-scale {
+    display: flex;
+    gap: 6px;
+}
+
+.wizard-madurez-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wizard-madurez-btn:hover {
+    border-color: var(--violet);
+    color: var(--text);
+}
+
+.wizard-madurez-btn.selected {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: var(--violet);
+    color: var(--violet);
+    font-weight: 600;
+}

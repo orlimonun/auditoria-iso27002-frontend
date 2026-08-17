@@ -36,7 +36,12 @@ export default function AuditoriaWizard() {
 
             const respMap = {};
             dataRespuestas.forEach((r) => {
-                respMap[r.preguntaId] = { valor: r.respuesta.toLowerCase(), observacion: r.observacion || '' };
+                // CAMBIO: se guarda tambien la madurez que venga del backend
+                respMap[r.preguntaId] = {
+                    valor: r.respuesta ? r.respuesta.toLowerCase() : '',
+                    madurez: r.nivelMadurez ?? null,   // NUEVO
+                    observacion: r.observacion || '',
+                };
             });
 
             setAuditoria(dataAuditoria);
@@ -83,27 +88,43 @@ export default function AuditoriaWizard() {
     const respondidas = Object.keys(respuestas).length;
     const progresoGlobal = totalPreguntas === 0 ? 0 : Math.round((respondidas / totalPreguntas) * 100);
 
+    // CAMBIO: al responder Si/No/NA se conserva la madurez ya elegida
     const handleRespuesta = async (preguntaId, valor) => {
-        const actual = respuestas[preguntaId] || { valor: '', observacion: '' };
+        const actual = respuestas[preguntaId] || { valor: '', madurez: null, observacion: '' };
         const nuevo = { ...actual, valor };
         setRespuestas({ ...respuestas, [preguntaId]: nuevo });
         try {
-            await guardarRespuesta(auditoriaId, preguntaId, valor.toUpperCase(), nuevo.observacion);
+            await guardarRespuesta(auditoriaId, preguntaId, valor.toUpperCase(), nuevo.madurez, nuevo.observacion);
         } catch (err) {
             console.error('Error al guardar respuesta', err);
         }
     };
 
+    // NUEVO: elegir el nivel de madurez (0-5) de una pregunta
+    const handleMadurez = async (preguntaId, madurez) => {
+        const actual = respuestas[preguntaId] || { valor: '', madurez: null, observacion: '' };
+        const nuevo = { ...actual, madurez };
+        setRespuestas({ ...respuestas, [preguntaId]: nuevo });
+        try {
+            // si aun no eligio Si/No/NA, se guarda NA por defecto para poder registrar la madurez
+            const valor = nuevo.valor ? nuevo.valor.toUpperCase() : 'NA';
+            await guardarRespuesta(auditoriaId, preguntaId, valor, madurez, nuevo.observacion);
+        } catch (err) {
+            console.error('Error al guardar madurez', err);
+        }
+    };
+
     const handleObservacion = (preguntaId, observacion) => {
-        const actual = respuestas[preguntaId] || { valor: '', observacion: '' };
+        const actual = respuestas[preguntaId] || { valor: '', madurez: null, observacion: '' };
         setRespuestas({ ...respuestas, [preguntaId]: { ...actual, observacion } });
     };
 
     const handleObservacionBlur = async (preguntaId) => {
         const actual = respuestas[preguntaId];
-        if (!actual || !actual.valor) return;
+        if (!actual || (!actual.valor && actual.madurez == null)) return;
         try {
-            await guardarRespuesta(auditoriaId, preguntaId, actual.valor.toUpperCase(), actual.observacion);
+            const valor = actual.valor ? actual.valor.toUpperCase() : 'NA';
+            await guardarRespuesta(auditoriaId, preguntaId, valor, actual.madurez, actual.observacion);
         } catch (err) {
             console.error('Error al guardar observación', err);
         }
@@ -198,7 +219,7 @@ export default function AuditoriaWizard() {
                             </p>
 
                             {control.preguntas.map((p) => {
-                                const r = respuestas[p.id] || { valor: '', observacion: '' };
+                                const r = respuestas[p.id] || { valor: '', madurez: null, observacion: '' };
                                 return (
                                     <div key={p.id} className="wizard-question">
                                         <p className="wizard-question-text">{p.texto}</p>
@@ -214,6 +235,25 @@ export default function AuditoriaWizard() {
                                                 </button>
                                             ))}
                                         </div>
+
+                                        {/* NUEVO: escala de madurez 0-5 debajo de cada pregunta */}
+                                        <div className="wizard-madurez">
+                                            <span className="wizard-madurez-label mono">Madurez:</span>
+                                            <div className="wizard-madurez-scale mono">
+                                                {[0, 1, 2, 3, 4, 5].map((nivel) => (
+                                                    <button
+                                                        key={nivel}
+                                                        type="button"
+                                                        title={NIVEL_MADUREZ_DESC[nivel]}
+                                                        className={`wizard-madurez-btn ${r.madurez === nivel ? 'selected' : ''}`}
+                                                        onClick={() => handleMadurez(p.id, nivel)}
+                                                    >
+                                                        {nivel}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <textarea
                                             placeholder="Observaciones / evidencia..."
                                             value={r.observacion}
@@ -230,3 +270,13 @@ export default function AuditoriaWizard() {
         </div>
     );
 }
+
+// NUEVO: descripciones de la escala de madurez (para el tooltip de cada nivel)
+const NIVEL_MADUREZ_DESC = {
+    0: '0 - No existe. No hay evidencia de implementación.',
+    1: '1 - Informal. Se aplica ocasionalmente, sin procedimientos.',
+    2: '2 - Parcial. Prácticas documentadas pero inconsistentes.',
+    3: '3 - Documentado. Definido e implementado en la mayoría de procesos.',
+    4: '4 - Supervisado. Implementado y revisado periódicamente.',
+    5: '5 - Mejora continua. Medido y en mejora constante.',
+};
