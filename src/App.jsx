@@ -14,6 +14,7 @@ import AuditoriaWizard from './pages/AuditoriaWizard';
 import Resultados from './pages/Resultados';
 import Historico from './pages/Historico';
 import Usuarios from './pages/Usuarios';
+import DemoInstrumento from './pages/DemoInstrumento';
 import './styles/global.css';
 
 export default function App() {

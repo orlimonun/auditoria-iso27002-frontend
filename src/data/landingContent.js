@@ -3,6 +3,7 @@ export const content = {
         nav: { services: 'Servicios', methodology: 'Metodología', team: 'Equipo', contact: 'Contacto' },
         status: 'Sistema en línea',
         loginBtn: 'Iniciar sesión',
+        demoBtn: 'Ver demo',
         hero: {
             badge: 'Disponibles para nuevos proyectos',
             title1: 'Bases de datos que',
@@ -64,6 +65,7 @@ export const content = {
         nav: { services: 'Services', methodology: 'Methodology', team: 'Team', contact: 'Contact' },
         status: 'System online',
         loginBtn: 'Log in',
+        demoBtn: 'View demo',
         hero: {
             badge: 'Available for new projects',
             title1: 'Databases that',

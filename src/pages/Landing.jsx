@@ -60,6 +60,7 @@ export default function Landing() {
                                 <img src="https://flagcdn.com/24x18/us.png" alt="English" width="20" height="15" />
                             </button>
                         </div>
+                        <Link to="/demo" className="btn-ghost mono">{t.demoBtn}</Link>
                         <Link to="/login" className="btn-login mono">{t.loginBtn}</Link>
                     </div>
                 </nav>
@@ -76,6 +77,7 @@ export default function Landing() {
                     <div className="cta-row">
                         <a className="btn btn-primary mono" href="#servicios">{t.hero.ctaPrimary}</a>
                         <a className="btn btn-ghost mono" href="#servicios">{t.hero.ctaSecondary}</a>
+                        <Link className="btn btn-ghost mono" to="/demo">{t.demoBtn} →</Link>
                     </div>
 
                     <div className="editor">
