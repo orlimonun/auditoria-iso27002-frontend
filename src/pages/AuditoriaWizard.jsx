@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getControles, getPreguntas } from '../api/controles';
 import { getAuditoria, finalizarAuditoria } from '../api/auditorias';
 import { getRespuestas, guardarRespuesta } from '../api/respuestas';
+import ControlPanel from '../components/ControlPanel';
 
 export default function AuditoriaWizard() {
     const { id } = useParams();
@@ -16,6 +17,7 @@ export default function AuditoriaWizard() {
     const [error, setError] = useState('');
     const [dominioActivo, setDominioActivo] = useState(0);
     const [finalizando, setFinalizando] = useState(false);
+    const [controlDetalle, setControlDetalle] = useState(null);  // NUEVO: control cuyo detalle se muestra
 
     const cargarTodo = async () => {
         setLoading(true);
@@ -210,7 +212,11 @@ export default function AuditoriaWizard() {
                 <div className="wizard-content">
                     {controlesDominio.map((control) => (
                         <div key={control.id} className="wizard-control-card">
-                            <div className="wizard-control-head">
+                            <div
+                                className="wizard-control-head wizard-control-head-click"
+                                onClick={() => setControlDetalle(control)}
+                                title="Ver descripción del control"
+                            >
                                 <span className="mono" style={{ color: 'var(--violet)' }}>{control.codigo}</span>
                                 <h3>{control.nombre}</h3>
                             </div>
@@ -267,6 +273,11 @@ export default function AuditoriaWizard() {
                     ))}
                 </div>
             </div>
+
+            {/* NUEVO: panel de detalle del control al hacer clic */}
+            {controlDetalle && (
+                <ControlPanel control={controlDetalle} onClose={() => setControlDetalle(null)} />
+            )}
         </div>
     );
 }

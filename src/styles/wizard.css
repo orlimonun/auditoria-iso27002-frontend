@@ -224,3 +224,17 @@
     color: var(--violet);
     font-weight: 600;
 }
+.wizard-control-head-click {
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.wizard-control-head-click:hover h3 {
+    color: var(--violet);
+}
+
+.wizard-control-head-click:hover::after {
+    content: ' ⓘ';
+    font-size: 0.75rem;
+    color: var(--violet);
+}
