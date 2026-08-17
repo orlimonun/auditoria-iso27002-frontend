@@ -24,6 +24,8 @@ export default function Controles() {
     const [form, setForm] = useState(emptyForm);
     const [selected, setSelected] = useState(null);
     const [guardando, setGuardando] = useState(false);
+    const [nuevoDominio, setNuevoDominio] = useState('');
+    const [creandoDominio, setCreandoDominio] = useState(false);
 
     const cargarDatos = async () => {
         setLoading(true);
