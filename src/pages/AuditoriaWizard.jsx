@@ -278,6 +278,10 @@ export default function AuditoriaWizard() {
             {controlDetalle && (
                 <ControlPanel control={controlDetalle} onClose={() => setControlDetalle(null)} />
             )}
+            {/* panel de detalle del control al hacer clic */}
+            {controlDetalle && (
+                <ControlPanel control={controlDetalle} onClose={() => setControlDetalle(null)} soloLectura />
+            )}
         </div>
     );
 }

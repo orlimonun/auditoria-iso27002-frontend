@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getPreguntas, crearPregunta } from '../api/controles';
 
-export default function ControlPanel({ control, onClose }) {
+export default function ControlPanel({ control, onClose, soloLectura = false }) {
     const [preguntas, setPreguntas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [nuevaPregunta, setNuevaPregunta] = useState('');
@@ -106,15 +106,17 @@ export default function ControlPanel({ control, onClose }) {
                             </div>
                         )}
 
-                        <form className="add-pregunta-form" onSubmit={handleAddPregunta}>
-                            <input
-                                placeholder="Nueva pregunta para este control..."
-                                value={nuevaPregunta}
-                                onChange={(e) => setNuevaPregunta(e.target.value)}
-                                disabled={guardando}
-                            />
-                            <button type="submit" className="mono" disabled={guardando}>+</button>
-                        </form>
+                        {!soloLectura && (
+                            <form className="add-pregunta-form" onSubmit={handleAddPregunta}>
+                                <input
+                                    placeholder="Nueva pregunta para este control..."
+                                    value={nuevaPregunta}
+                                    onChange={(e) => setNuevaPregunta(e.target.value)}
+                                    disabled={guardando}
+                                />
+                                <button type="submit" className="mono" disabled={guardando}>+</button>
+                            </form>
+                        )}
                     </div>
                 </div>
             </div>
