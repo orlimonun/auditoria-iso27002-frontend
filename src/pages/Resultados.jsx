@@ -65,8 +65,6 @@ export default function Resultados() {
         );
     }
 
-    const riesgoGeneral = resultados ? getRiskLevel(resultados.indiceGeneralRiesgo) : null;
-
     const dataBarras = resultados
         ? resultados.dominios.map((d) => ({
             dominio: d.dominio.length > 14 ? d.dominio.slice(0, 14) + '…' : d.dominio,
@@ -92,7 +90,6 @@ export default function Resultados() {
             },
             {
                 madurezPromedioGeneral: resultados.madurezPromedioGeneral,
-                indiceGeneral: resultados.indiceGeneralRiesgo,
                 riesgoC: resultados.riesgoC,
                 riesgoI: resultados.riesgoI,
                 riesgoD: resultados.riesgoD,
@@ -111,8 +108,7 @@ export default function Resultados() {
                     nombre: c.nombre,
                     pctNo: c.riesgoControl,
                 })),
-            },
-            riesgoGeneral
+            }
         );
     };
 
@@ -162,15 +158,6 @@ export default function Resultados() {
                         <div className="kpi-card">
                             <span className="kpi-label mono">Madurez promedio</span>
                             <span className="kpi-value">{resultados.madurezPromedioGeneral.toFixed(1)}<span className="kpi-unit">/5</span></span>
-                        </div>
-                        <div className="kpi-card kpi-risk" style={{ borderColor: riesgoGeneral.color }}>
-                            <span className="kpi-label mono">Índice general de riesgo</span>
-                            <span className="kpi-value" style={{ color: riesgoGeneral.color }}>
-                {resultados.indiceGeneralRiesgo.toFixed(0)}
-              </span>
-                            <span className="kpi-badge mono" style={{ background: `${riesgoGeneral.color}22`, color: riesgoGeneral.color }}>
-                {riesgoGeneral.label}
-              </span>
                         </div>
                         <div className="kpi-card">
                             <span className="kpi-label mono">Riesgo confidencialidad</span>

@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export function exportarReporteEjecutivo(auditoria, resultados, riesgoGeneral) {
+export function exportarReporteEjecutivo(auditoria, resultados) {
     const doc = new jsPDF();
     const fechaGeneracion = new Date().toLocaleDateString('es-CR');
 
@@ -51,7 +51,6 @@ export function exportarReporteEjecutivo(auditoria, resultados, riesgoGeneral) {
         head: [['Indicador', 'Valor']],
         body: [
             ['Madurez promedio', `${resultados.madurezPromedioGeneral.toFixed(1)} / 5`],
-            ['Índice general de riesgo', `${resultados.indiceGeneral}% (${riesgoGeneral.label})`],
             ['Riesgo — Confidencialidad', `${resultados.riesgoC}%`],
             ['Riesgo — Integridad', `${resultados.riesgoI}%`],
             ['Riesgo — Disponibilidad', `${resultados.riesgoD}%`],
