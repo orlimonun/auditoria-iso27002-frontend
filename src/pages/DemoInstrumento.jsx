@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts';
-import { mockControles } from '../mockData/controles';
+import { getInstrumentoPublico } from '../api/publico';
 import { calcularResultadosDemo } from '../utils/calcularResultadosDemo';
 
 const NIVEL_MADUREZ_DESC = {
@@ -31,17 +31,36 @@ export default function DemoInstrumento() {
     const [dominioActivo, setDominioActivo] = useState(0);
     const [respuestas, setRespuestas] = useState({});
     const [madurez, setMadurez] = useState({});
+    const [controles, setControles] = useState([]);
+    const [cargando, setCargando] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let activo = true;
+        setCargando(true);
+        getInstrumentoPublico()
+            .then((data) => {
+                if (activo) setControles(data || []);
+            })
+            .catch(() => {
+                if (activo) setError('No se pudo cargar el instrumento. Intenta de nuevo en unos minutos.');
+            })
+            .finally(() => {
+                if (activo) setCargando(false);
+            });
+        return () => { activo = false; };
+    }, []);
 
     const dominios = useMemo(() => {
         const map = {};
-        mockControles.forEach((c) => {
+        controles.forEach((c) => {
             if (!map[c.dominio]) map[c.dominio] = [];
             map[c.dominio].push(c);
         });
         return Object.entries(map);
-    }, []);
+    }, [controles]);
 
-    const totalPreguntas = mockControles.reduce((acc, c) => acc + c.preguntas.length, 0);
+    const totalPreguntas = controles.reduce((acc, c) => acc + c.preguntas.length, 0);
     const respondidas = Object.keys(respuestas).length;
     const progresoGlobal = totalPreguntas === 0 ? 0 : Math.round((respondidas / totalPreguntas) * 100);
 
@@ -70,7 +89,7 @@ export default function DemoInstrumento() {
     };
 
     const resultados = useMemo(
-        () => calcularResultadosDemo(mockControles, respuestas, madurez),
+        () => calcularResultadosDemo(controles, respuestas, madurez),
         [respuestas, madurez]
     );
 
@@ -131,7 +150,15 @@ export default function DemoInstrumento() {
                     </div>
                 </div>
 
-                {vista === 'wizard' ? (
+                {cargando ? (
+                    <div className="chart-card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <p style={{ color: 'var(--muted)' }}>Cargando el instrumento…</p>
+                    </div>
+                ) : error ? (
+                    <div className="chart-card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <p style={{ color: 'var(--risk-high)' }}>{error}</p>
+                    </div>
+                ) : vista === 'wizard' ? (
                     <div className="wizard-layout">
                         <aside className="wizard-steps">
                             {dominios.map(([dominio, ctrls], i) => {
