@@ -26,6 +26,7 @@ export default function App() {
                         <Routes>
                             <Route path="/" element={<Landing />} />
                             <Route path="/login" element={<Login />} />
+                            <Route path="/demo" element={<DemoInstrumento />} />
 
                             <Route
                                 path="/app"
