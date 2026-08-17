@@ -2,20 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuditorias } from '../api/auditorias';
 import { getOrganizaciones } from '../api/organizaciones';
-import { getResultados } from '../api/resultados';
-
-function getRiskLevel(indice) {
-    if (indice < 30) return { label: 'Bajo', color: 'var(--risk-low)' };
-    if (indice < 60) return { label: 'Medio', color: 'var(--risk-mid)' };
-    if (indice < 85) return { label: 'Alto', color: 'var(--risk-high)' };
-    return { label: 'Crítico', color: 'var(--risk-critical)' };
-}
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const [auditorias, setAuditorias] = useState([]);
     const [organizaciones, setOrganizaciones] = useState([]);
-    const [resumen, setResumen] = useState({ madurezPromedio: 0, riesgoPromedio: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -30,20 +21,6 @@ export default function Dashboard() {
                 ]);
                 setAuditorias(dataAuditorias);
                 setOrganizaciones(dataOrganizaciones);
-
-                if (dataAuditorias.length > 0) {
-                    const resultados = await Promise.all(
-                        dataAuditorias.map((a) => getResultados(a.id).catch(() => null))
-                    );
-                    const validos = resultados.filter((r) => r && r.controles.length > 0);
-                    const madurezPromedio = validos.length
-                        ? validos.reduce((acc, r) => acc + r.madurezPromedioGeneral, 0) / validos.length
-                        : 0;
-                    const riesgoPromedio = validos.length
-                        ? validos.reduce((acc, r) => acc + r.indiceGeneralRiesgo, 0) / validos.length
-                        : 0;
-                    setResumen({ madurezPromedio, riesgoPromedio });
-                }
             } catch (err) {
                 setError('No se pudo cargar la información del dashboard.');
             } finally {
@@ -58,7 +35,7 @@ export default function Dashboard() {
     }
 
     const auditoriasActivas = auditorias.filter((a) => a.estado !== 'FINALIZADA').length;
-    const riesgo = getRiskLevel(resumen.riesgoPromedio);
+    const auditoriasFinalizadas = auditorias.filter((a) => a.estado === 'FINALIZADA').length;
     const recientes = [...auditorias]
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
         .slice(0, 5);
@@ -83,18 +60,8 @@ export default function Dashboard() {
                 </div>
 
                 <div className="kpi-card">
-                    <span className="kpi-label mono">Madurez promedio</span>
-                    <span className="kpi-value">{resumen.madurezPromedio.toFixed(1)}<span className="kpi-unit">/5</span></span>
-                </div>
-
-                <div className="kpi-card kpi-risk" style={{ borderColor: riesgo.color }}>
-                    <span className="kpi-label mono">Índice de riesgo global</span>
-                    <span className="kpi-value" style={{ color: riesgo.color }}>
-            {resumen.riesgoPromedio.toFixed(0)}
-          </span>
-                    <span className="kpi-badge mono" style={{ background: `${riesgo.color}22`, color: riesgo.color }}>
-            {riesgo.label}
-          </span>
+                    <span className="kpi-label mono">Auditorías finalizadas</span>
+                    <span className="kpi-value">{auditoriasFinalizadas}</span>
                 </div>
 
                 <div className="kpi-card">
