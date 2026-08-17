@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getControles, crearControl, eliminarControl } from '../api/controles';
-import { getDominios } from '../api/dominios';
+import { getDominios, crearDominio } from '../api/dominios';
 import ControlPanel from '../components/ControlPanel';
 
 const emptyForm = {
@@ -76,6 +76,21 @@ export default function Controles() {
         }
     };
 
+    const handleCrearDominio = async () => {
+        const nombre = nuevoDominio.trim();
+        if (!nombre) return;
+        try {
+            const creado = await crearDominio(nombre);
+            const nuevos = [...dominios, creado];
+            setDominios(nuevos);
+            setForm({ ...form, dominioId: creado.id });
+            setNuevoDominio('');
+            setCreandoDominio(false);
+        } catch (err) {
+            setError(err.message || 'No se pudo crear el dominio.');
+        }
+    };
+
     const handleDelete = async (id, e) => {
         e.stopPropagation();
         try {
@@ -120,12 +135,31 @@ export default function Controles() {
                         </div>
                         <div className="form-field">
                             <label className="mono">Dominio</label>
-                            <select name="dominioId" value={form.dominioId} onChange={handleChange} required>
-                                <option value="">Seleccione...</option>
-                                {dominios.map((d) => (
-                                    <option key={d.id} value={d.id}>{d.nombre}</option>
-                                ))}
-                            </select>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <select name="dominioId" value={form.dominioId} onChange={handleChange} required style={{ flex: 1 }}>
+                                    <option value="">Seleccione...</option>
+                                    {dominios.map((d) => (
+                                        <option key={d.id} value={d.id}>{d.nombre}</option>
+                                    ))}
+                                </select>
+                                <button type="button" className="btn-ghost mono" onClick={() => setCreandoDominio(!creandoDominio)}>
+                                    {creandoDominio ? '\u2715' : '+ Nuevo'}
+                                </button>
+                            </div>
+                            {creandoDominio && (
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                    <input
+                                        value={nuevoDominio}
+                                        onChange={(e) => setNuevoDominio(e.target.value)}
+                                        placeholder="Nombre del nuevo dominio"
+                                        style={{ flex: 1 }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCrearDominio(); } }}
+                                    />
+                                    <button type="button" className="btn-primary-sm mono" onClick={handleCrearDominio}>
+                                        Crear
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div className="form-field">
                             <label className="mono">Peso (1-10)</label>
