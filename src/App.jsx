@@ -15,6 +15,7 @@ import Resultados from './pages/Resultados';
 import Historico from './pages/Historico';
 import Usuarios from './pages/Usuarios';
 import DemoInstrumento from './pages/DemoInstrumento';
+import Monitoreo from './pages/Monitoreo';
 import './styles/global.css';
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
                                 <Route path="auditorias" element={<Auditorias />} />
                                 <Route path="auditorias/:id" element={<AuditoriaWizard />} />
                                 <Route path="resultados" element={<Resultados />} />
+                                <Route path="monitoreo" element={<Monitoreo />} />
                                 <Route path="historico" element={<Historico />} />
                                 <Route
                                     path="usuarios"

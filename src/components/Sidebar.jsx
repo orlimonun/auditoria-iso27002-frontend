@@ -9,6 +9,7 @@ const links = [
     { to: '/app/auditorias', label: 'Auditorías', icon: '✓' },
     { to: '/app/resultados', label: 'Resultados', icon: '▤' },
     { to: '/app/historico', label: 'Histórico', icon: '↗' },
+    { to: '/app/monitoreo', label: 'Monitoreo', icon: '●' },
 ];
 
 export default function Sidebar() {
