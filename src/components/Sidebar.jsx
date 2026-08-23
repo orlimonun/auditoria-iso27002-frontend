@@ -10,6 +10,7 @@ const links = [
     { to: '/app/resultados', label: 'Resultados', icon: '▤' },
     { to: '/app/historico', label: 'Histórico', icon: '↗' },
     { to: '/app/monitoreo', label: 'Monitoreo', icon: '●' },
+    { to: '/app/monitoreo-real', label: 'Monitor Oracle', icon: '◎' },
 ];
 
 export default function Sidebar() {
