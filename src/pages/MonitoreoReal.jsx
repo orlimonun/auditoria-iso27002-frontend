@@ -1,203 +1,327 @@
-import { useEffect, useState } from 'react';
-import {
-    Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
-} from 'recharts';
-import { getSaludOracle } from '../api/monitoreoOracle';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { getEstadoOracle, getSaludOracle } from '../api/monitoreoOracle';
 import '../styles/monitoreo.css';
 
 const statusInfo = {
-    optimal:  { label: 'Óptimo',    color: '#22c55e' },
-    healthy:  { label: 'Saludable', color: '#22c55e' },
-    warning:  { label: 'Advertencia', color: '#fbbf24' },
-    degraded: { label: 'Degradado', color: '#fb923c' },
-    critical: { label: 'Crítico',   color: '#f87171' },
-    normal:   { label: 'Normal',    color: '#4ade80' },
+    optimal: { label: 'Óptimo', color: '#22c55e' }, healthy: { label: 'Saludable', color: '#4ade80' },
+    warning: { label: 'Advertencia', color: '#fbbf24' }, degraded: { label: 'Degradado', color: '#fb923c' },
+    critical: { label: 'Crítico', color: '#f87171' }, normal: { label: 'Normal', color: '#4ade80' },
 };
 const metricStatusLabel = { normal: 'Normal', warning: 'Advertencia', degraded: 'Alto', critical: 'Crítico' };
-
-// Definiciones de umbrales para las 12 metricas reales (por su label del backend).
-// higher = peor cuanto mas alto; lower = peor cuanto mas bajo; ref = solo referencia.
-const DEFS = {
-    'Sesiones totales':   { max: 500, dir: 'higher', w: 345, d: 425, c: 475, nr: '0–344', wr: '345–424', dr: '425–474', cr: '475+', unit: '', src: 'V$SESSION', help: 'Total de sesiones conectadas a la instancia.' },
-    'Sesiones activas':   { max: 100, dir: 'higher', w: 70,  d: 85,  c: 95,  nr: '0–69', wr: '70–84', dr: '85–94', cr: '95+', unit: '', src: 'V$SESSION', help: 'Sesiones ejecutando actividad.' },
-    'Sesiones inactivas': { max: 100, dir: 'higher', w: 70,  d: 85,  c: 95,  nr: '0–69', wr: '70–84', dr: '85–94', cr: '95+', unit: '', src: 'V$SESSION', help: 'Sesiones conectadas sin actividad.' },
-    'Sesiones bloqueadas':{ max: 8,   dir: 'higher', w: 1,   d: 3,   c: 5,   nr: '0', wr: '1–2', dr: '3–4', cr: '5+', unit: '', src: 'V$SESSION', help: 'Sesiones esperando por un bloqueo.' },
-    'Procesos':           { max: 300, dir: 'higher', w: 208, d: 255, c: 285, nr: '0–207', wr: '208–254', dr: '255–284', cr: '285+', unit: '', src: 'V$PROCESS', help: 'Procesos Oracle activos.' },
-    'SGA total (MB)':     { ref: true, unit: ' MB', src: 'V$SGASTAT', help: 'Tamaño total de la memoria compartida (referencia).' },
-    'SGA libre (MB)':     { ref: true, unit: ' MB', src: 'V$SGASTAT', help: 'Memoria libre dentro de la SGA (referencia).' },
-    'Uso de SGA (%)':     { max: 100, dir: 'higher', w: 80, d: 90, c: 95, nr: '0–79', wr: '80–89', dr: '90–94', cr: '95+', unit: '%', src: 'V$SGASTAT', help: 'Porcentaje de la SGA en uso.' },
-    'Buffer cache hit (%)':{ max: 100, dir: 'lower', w: 90, d: 85, c: 80, nr: '90–100', wr: '85–89', dr: '80–84', cr: '<80', unit: '%', src: 'V$SYSSTAT', help: 'Lecturas atendidas desde memoria.' },
-    'Tablespaces':        { ref: true, unit: '', src: 'DBA_TABLESPACES', help: 'Cantidad de tablespaces (referencia).' },
-    'Max uso tablespace (%)':{ max: 100, dir: 'higher', w: 80, d: 85, c: 90, nr: '0–79', wr: '80–84', dr: '85–89', cr: '90+', unit: '%', src: 'DBA_DATA_FILES', help: 'Ocupación del tablespace más lleno.' },
-    'Datafiles online':   { ref: true, unit: '', src: 'V$DATAFILE', help: 'Datafiles operativos (referencia).' },
-    'Datafiles con problema':{ max: 5, dir: 'higher', w: 1, d: 2, c: 3, nr: '0', wr: '1', dr: '2', cr: '3+', unit: '', src: 'V$DATAFILE', help: 'Datafiles fuera de línea o con problemas.' },
+const COMPONENTS = {
+    Procesos: { code: 'IP', weight: 30, description: 'Actividad, sesiones, bloqueos y procesos activos de Oracle.', source: 'V$SESSION · V$PROCESS' },
+    Memoria: { code: 'IM', weight: 35, description: 'Uso de la SGA y eficiencia del buffer cache.', source: 'V$SGASTAT · V$SYSSTAT' },
+    Archivos: { code: 'IA', weight: 35, description: 'Capacidad de tablespaces y disponibilidad de datafiles.', source: 'DBA_TABLESPACES · DBA_DATA_FILES · V$DATAFILE' },
 };
 
+// Estos labels deben coincidir con SaludOracleDTO.metricas del backend.
+const METRIC_DEFS = {
+    'Sesiones totales': { max: 500, direction: 'higher', warning: 345, degraded: 425, critical: 475, ranges: ['0–344', '345–424', '425–474', '475+'], source: 'V$SESSION', help: 'Total de sesiones conectadas a la instancia.' },
+    'Sesiones activas': { max: 100, direction: 'higher', warning: 70, degraded: 85, critical: 95, ranges: ['0–69', '70–84', '85–94', '95+'], source: 'V$SESSION', help: 'Sesiones que están ejecutando actividad.' },
+    'Sesiones inactivas': { max: 100, direction: 'higher', warning: 70, degraded: 85, critical: 95, ranges: ['0–69', '70–84', '85–94', '95+'], source: 'V$SESSION', help: 'Sesiones conectadas que no ejecutan actividad.' },
+    'Sesiones bloqueadas': { max: 8, direction: 'higher', warning: 1, degraded: 3, critical: 5, ranges: ['0', '1–2', '3–4', '5+'], source: 'V$SESSION', help: 'Sesiones que esperan por un bloqueo.' },
+    Procesos: { max: 300, direction: 'higher', warning: 208, degraded: 255, critical: 285, ranges: ['0–207', '208–254', '255–284', '285+'], source: 'V$PROCESS', help: 'Procesos Oracle activos.' },
+    'SGA total (MB)': { reference: true, unit: ' MB', source: 'V$SGASTAT', help: 'Tamaño total de la memoria compartida.' },
+    'SGA libre (MB)': { reference: true, unit: ' MB', source: 'V$SGASTAT', help: 'Memoria libre dentro de la SGA.' },
+    'Uso de SGA (%)': { max: 100, direction: 'higher', warning: 80, degraded: 90, critical: 95, ranges: ['0–79', '80–89', '90–94', '95+'], unit: '%', source: 'V$SGASTAT', help: 'Porcentaje de la SGA actualmente en uso.' },
+    'Buffer cache hit (%)': { max: 100, direction: 'lower', warning: 90, degraded: 85, critical: 80, ranges: ['90–100', '85–89', '80–84', '<80'], unit: '%', source: 'V$SYSSTAT', help: 'Lecturas atendidas desde memoria sin ir a disco.' },
+    Tablespaces: { reference: true, source: 'DBA_TABLESPACES', help: 'Cantidad total de tablespaces.' },
+    'Max uso tablespace (%)': { max: 100, direction: 'higher', warning: 80, degraded: 85, critical: 90, ranges: ['0–79', '80–84', '85–89', '90+'], unit: '%', source: 'DBA_DATA_FILES', help: 'Ocupación del tablespace con mayor uso.' },
+    'Datafiles online': { reference: true, source: 'V$DATAFILE', help: 'Datafiles que se encuentran operativos.' },
+    'Datafiles con problema': { max: 5, direction: 'higher', warning: 1, degraded: 2, critical: 3, ranges: ['0', '1', '2', '3+'], source: 'V$DATAFILE', help: 'Datafiles fuera de línea o con problemas.' },
+};
+
+function normalizeStatus(value, fallback = 'normal') {
+    const normalized = String(value ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const aliases = { optimo: 'optimal', saludable: 'healthy', advertencia: 'warning', degradado: 'degraded', alto: 'degraded', critico: 'critical', normal: 'normal' };
+    const status = aliases[normalized] || normalized;
+    return statusInfo[status] ? status : fallback;
+}
+function scoreStatus(score) {
+    if (score < 40) return 'critical';
+    if (score < 60) return 'degraded';
+    if (score < 75) return 'warning';
+    if (score >= 90) return 'optimal';
+    return 'healthy';
+}
+
+function connectionState(response, requestFailed = false) {
+    if (requestFailed) return { status: 'unknown', label: 'ESTADO NO DISPONIBLE' };
+    if (response == null) return { status: 'unknown', label: 'ESTADO NO DISPONIBLE' };
+    const rawValue = response?.conectado ?? response?.disponible ?? response?.online
+        ?? response?.estado ?? response?.status ?? response?.mensaje ?? response?.error ?? response;
+    if (typeof rawValue === 'boolean') {
+        return rawValue
+            ? { status: 'online', label: 'ORACLE CONECTADO' }
+            : { status: 'offline', label: 'ORACLE DESCONECTADO' };
+    }
+    const normalized = String(rawValue ?? '').trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const isOffline = ['false', 'down', 'offline', 'desconectado', 'no disponible', 'error', 'cerrado'].some((value) => normalized.includes(value));
+    return isOffline
+        ? { status: 'offline', label: 'ORACLE DESCONECTADO' }
+        : { status: 'online', label: 'ORACLE CONECTADO' };
+}
+function metricStatus(metric) {
+    const fromBackend = normalizeStatus(metric.estado, '');
+    if (fromBackend) return fromBackend;
+    const def = METRIC_DEFS[metric.label];
+    if (!def || def.reference) return 'normal';
+    const value = Number(metric.valor);
+    if (def.direction === 'lower') {
+        if (value < def.critical) return 'critical';
+        if (value < def.degraded) return 'degraded';
+        if (value < def.warning) return 'warning';
+        return 'normal';
+    }
+    if (value >= def.critical) return 'critical';
+    if (value >= def.degraded) return 'degraded';
+    if (value >= def.warning) return 'warning';
+    return 'normal';
+}
 function scaleBackground(def) {
-    if (def.ref) return 'linear-gradient(90deg, var(--violet, #8b5cf6), var(--blue, #3b82f6))';
-    if (def.dir === 'lower') {
-        const c = (def.c / def.max) * 100, d = (def.d / def.max) * 100, w = (def.w / def.max) * 100;
+    if (def.reference) return 'linear-gradient(90deg, var(--violet), var(--blue))';
+    if (def.direction === 'lower') {
+        const c = (def.critical / def.max) * 100, d = (def.degraded / def.max) * 100, w = (def.warning / def.max) * 100;
         return `linear-gradient(90deg, var(--monitor-critical) 0 ${c}%, var(--monitor-degraded) ${c}% ${d}%, var(--monitor-warning) ${d}% ${w}%, var(--monitor-normal) ${w}% 100%)`;
     }
-    const w = (def.w / def.max) * 100, d = (def.d / def.max) * 100, c = (def.c / def.max) * 100;
+    const w = (def.warning / def.max) * 100, d = (def.degraded / def.max) * 100, c = (def.critical / def.max) * 100;
     return `linear-gradient(90deg, var(--monitor-normal) 0 ${w}%, var(--monitor-warning) ${w}% ${d}%, var(--monitor-degraded) ${d}% ${c}%, var(--monitor-critical) ${c}% 100%)`;
 }
 
 function TrafficLight({ status, compact = false }) {
-    const activeLamp = ['optimal', 'healthy', 'normal'].includes(status) ? 'green' : status === 'warning' ? 'yellow' : 'red';
-    return (
-        <span className={`monitor-traffic ${compact ? 'compact' : ''}`} aria-label={`Estado ${statusInfo[status]?.label || status}`}>
-            {['red', 'yellow', 'green'].map((lamp) => (
-                <span key={lamp}
-                      className={`monitor-traffic-light ${activeLamp === lamp ? 'is-active' : ''}`}
-                      style={activeLamp === lamp ? { '--lamp-color': statusInfo[status]?.color } : undefined} />
-            ))}
-        </span>
-    );
+    const safeStatus = normalizeStatus(status);
+    const activeLamp = ['optimal', 'healthy', 'normal'].includes(safeStatus) ? 'green' : safeStatus === 'warning' ? 'yellow' : 'red';
+    return <span className={`monitor-traffic ${compact ? 'compact' : ''}`} aria-label={`Estado ${statusInfo[safeStatus].label}`}>
+        {['red', 'yellow', 'green'].map((lamp) => <span key={lamp} className={`monitor-traffic-light ${activeLamp === lamp ? 'is-active' : ''}`} style={activeLamp === lamp ? { '--lamp-color': statusInfo[safeStatus].color } : undefined} />)}
+    </span>;
+}
+function HealthRing({ score, status, size = '' }) {
+    const safeScore = Math.max(0, Math.min(Number(score) || 0, 100));
+    const safeStatus = normalizeStatus(status, scoreStatus(safeScore));
+    return <div className={`health-ring ${size}`} style={{ '--score': `${safeScore * 3.6}deg`, '--ring-color': statusInfo[safeStatus].color }}><div className="health-ring-center"><strong>{safeScore}</strong><span>/100</span></div></div>;
+}
+function StatusLegend() {
+    return <div className="monitor-legend" aria-label="Escala del ISBD">{['optimal', 'healthy', 'warning', 'degraded', 'critical'].map((status) => <span key={status}><i className={`legend-dot ${status}`} />{statusInfo[status].label}</span>)}</div>;
 }
 
-// Tarjeta de metrica IDENTICA a la de la companera
-function MetricCardReal({ metrica }) {
-    const def = DEFS[metrica.label] || { ref: true, unit: '', src: 'ORACLE', help: '' };
-    const status = metrica.estado || 'normal';
-    const progress = def.max ? Math.min((metrica.valor / def.max) * 100, 100) : 100;
+function CompanyCard({ companyName, databaseName, health, scores, globalStatus, oracleState, lastUpdated, onOpen }) {
+    const indicators = [
+        { key: 'indice', label: 'ISBD · Índice global', score: Number(health.isbd) || 0, status: globalStatus },
+        ...Object.entries(COMPONENTS).map(([key, definition]) => ({
+            key, label: `${definition.code} · ${key}`, score: scores[key], status: scoreStatus(scores[key]),
+        })),
+    ];
     return (
-        <article className={`metric-card status-${status}`}>
-            <header>
+        <article className={`monitor-client-card status-${globalStatus}`} role="button" tabIndex={0}
+                 onClick={() => onOpen('indice')}
+                 onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onOpen('indice'); }}>
+            <header className="client-card-head">
                 <div>
-                    <span className="metric-status"><i />{def.ref ? 'Referencia' : metricStatusLabel[status]}</span>
-                    <h4>{metrica.label}</h4>
+                    <span className={`client-live ${oracleState.status}`}><i /> {oracleState.label}</span>
+                    <h2>{companyName}</h2>
+                    <p className="mono">{databaseName}</p>
                 </div>
-                <TrafficLight status={status} compact />
+                <HealthRing score={health.isbd} status={globalStatus} size="small" />
             </header>
-            <div className="metric-current"><strong>{metrica.valor}</strong><span>{def.unit}</span></div>
-            <div className="metric-scale" style={{ background: scaleBackground(def) }}>
-                <i style={{ width: `${progress}%` }} /><b style={{ left: `${progress}%` }} />
+            <div className="client-alert-summary">
+                <span className={`state-pill ${globalStatus}`}>{statusInfo[globalStatus].label}</span>
+                <small>1 base de datos Oracle</small>
             </div>
-            {def.ref ? (
-                <div className="metric-reference">Valor de referencia</div>
-            ) : (
-                <div className="metric-range-list">
-                    <span><i className="normal" /><b>Normal</b><em>{def.nr}</em></span>
-                    <span><i className="warning" /><b>Advertencia</b><em>{def.wr}</em></span>
-                    <span><i className="degraded" /><b>Alto</b><em>{def.dr}</em></span>
-                    <span><i className="critical" /><b>Crítico</b><em>{def.cr}</em></span>
-                </div>
-            )}
-            <p>{def.help}</p>
-            <span className="metric-source mono">FUENTE: {def.src}</span>
+            <div className="client-indicators">
+                {indicators.map((indicator) => (
+                    <button key={indicator.key} className={`client-indicator indicator-${indicator.status}`}
+                            onClick={(event) => { event.stopPropagation(); onOpen(indicator.key); }}>
+                        <TrafficLight status={indicator.status} compact />
+                        <span><small>{indicator.label}</small><strong>{indicator.score}<em>/100</em></strong></span>
+                        <b aria-hidden="true">›</b>
+                    </button>
+                ))}
+            </div>
+            <footer className="client-card-foot">
+                <span>Oracle Database</span>
+                <span className="mono">↻ {lastUpdated?.toLocaleTimeString('es-CR') || '—'}</span>
+            </footer>
         </article>
     );
 }
 
-function ComponenteReal({ codigo, label, valor, metricas }) {
-    const status = valor < 40 ? 'critical' : valor < 60 ? 'degraded' : valor < 75 ? 'warning' : 'normal';
-    const counts = metricas.reduce((a, m) => {
-        const def = DEFS[m.label];
-        if (def && !def.ref) a[m.estado || 'normal'] += 1;
-        return a;
-    }, { normal: 0, warning: 0, degraded: 0, critical: 0 });
-    return (
-        <div className="category-detail" style={{ marginBottom: 24 }}>
-            <div className={`category-summary status-${status}`}>
-                <div>
-                    <span className="detail-eyebrow mono">{codigo}</span>
-                    <strong>{valor}<small>/100</small></strong>
-                    <p>Indicador de {label} calculado desde métricas reales de Oracle.</p>
-                </div>
-                <TrafficLight status={status} />
-                <div className="category-counts">
-                    {Object.entries(counts).map(([k, t]) => <span key={k}><i className={`legend-dot ${k}`} /><b>{t}</b>{metricStatusLabel[k]}</span>)}
-                </div>
-            </div>
-            <div className="metric-grid">
-                {metricas.map((m, i) => <MetricCardReal key={i} metrica={m} />)}
-            </div>
-        </div>
-    );
+function MonitorTooltip({ active, payload }) {
+    if (!active || !payload?.length) return null;
+    return <div className="monitor-tooltip"><strong>{payload[0].payload.nombre}</strong><span>ISBD: {payload[0].value}/100</span><small>{statusInfo[payload[0].payload.status].label}</small></div>;
+}
+function IndicatorCard({ component, score, selected, onClick, metricCount }) {
+    const def = COMPONENTS[component], status = scoreStatus(score);
+    return <button className={`real-indicator-card status-${status} ${selected ? 'is-selected' : ''}`} onClick={onClick}>
+        <div className="real-indicator-heading"><TrafficLight status={status} compact /><span><small>{def.code} · PESO {def.weight}%</small><strong>{component}</strong></span><b>{score}<em>/100</em></b></div>
+        <div className="overview-category-bar"><i style={{ width: `${score}%` }} /></div><p>{def.description}</p>
+        <span className="category-link"><span>{metricCount} métricas reales</span><b>Ver detalle →</b></span>
+    </button>;
+}
+function MetricCard({ metric }) {
+    const def = METRIC_DEFS[metric.label] || { reference: true, source: 'ORACLE', help: 'Métrica informada por Oracle.' };
+    const status = def.reference ? 'normal' : metricStatus(metric), value = Number(metric.valor);
+    const progress = def.max ? Math.max(0, Math.min((value / def.max) * 100, 100)) : 100;
+    return <article className={`metric-card status-${status}`}>
+        <header><div><span className="metric-status"><i />{def.reference ? 'Referencia' : metricStatusLabel[status]}</span><h4>{metric.label}</h4></div><TrafficLight status={status} compact /></header>
+        <div className="metric-current"><strong>{metric.valor}</strong><span>{def.unit || ''}</span></div>
+        <div className="metric-scale" style={{ background: scaleBackground(def) }}><i style={{ width: `${progress}%` }} /><b style={{ left: `${progress}%` }} /></div>
+        {def.reference ? <div className="metric-reference">Valor informativo de la instancia</div> : <div className="metric-range-list">{['normal', 'warning', 'degraded', 'critical'].map((rangeStatus, index) => <span key={rangeStatus}><i className={rangeStatus} /><b>{metricStatusLabel[rangeStatus]}</b><em>{def.ranges[index]}</em></span>)}</div>}
+        <p>{def.help}</p><span className="metric-source mono">FUENTE: {def.source}</span>
+    </article>;
+}
+function AlertsPanel({ metrics, onSelectComponent }) {
+    const order = { critical: 0, degraded: 1, warning: 2 };
+    const alerts = metrics.filter((metric) => !METRIC_DEFS[metric.label]?.reference && metricStatus(metric) !== 'normal').sort((a, b) => order[metricStatus(a)] - order[metricStatus(b)]);
+    return <section className="monitor-alerts-panel real-alerts-panel"><div className="overview-intro"><div><span className="detail-eyebrow mono">ALERTAS ACTIVAS</span><h3>Problemas que no debe ocultar el índice</h3></div><p>Fecha y hora: ahora · actualización en vivo</p></div>
+        {alerts.length === 0 ? <div className="alert-empty"><i className="legend-dot healthy" /> Todos los componentes se encuentran dentro de los rangos normales.</div> : <div className="alert-list">{alerts.map((metric, index) => {
+            const status = metricStatus(metric), def = METRIC_DEFS[metric.label];
+            return <button key={`${metric.label}-${index}`} className={`monitor-alert status-${status}`} onClick={() => onSelectComponent(metric.componente)}><i className={`legend-dot ${status}`} /><span><strong>{metric.label}</strong><small>{metric.componente} · valor {metric.valor}{def?.unit || ''}</small></span><span className="alert-threshold"><small>Rango normal</small><b>{def?.ranges?.[0] || 'Backend'}</b></span><em>{metricStatusLabel[status]}</em></button>;
+        })}</div>}
+    </section>;
+}
+function HistoryTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) return null;
+    return <div className="monitor-tooltip"><strong>{label}</strong><span>ISBD: {payload[0].value}/100</span></div>;
 }
 
 export default function MonitoreoReal() {
-    const [salud, setSalud] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [historial, setHistorial] = useState([]);
-
-    const cargar = async () => {
-        setError('');
+    const [health, setHealth] = useState(null), [loading, setLoading] = useState(true), [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState(''), [history, setHistory] = useState([]), [selectedComponent, setSelectedComponent] = useState('Procesos');
+    const [detailView, setDetailView] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [oracleConnection, setOracleConnection] = useState(null);
+    const [connectionRequestFailed, setConnectionRequestFailed] = useState(false);
+    const loadHealth = useCallback(async (manual = false) => {
+        if (manual) setRefreshing(true);
         try {
-            const data = await getSaludOracle();
-            setSalud(data);
-            setHistorial((prev) => {
-                const ahora = new Date().toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-                return [...prev, { hora: ahora, isbd: data.isbd }].slice(-12);
-            });
-        } catch (err) {
-            setError('No se pudo leer la salud de Oracle. ¿El backend está conectado?');
-        } finally {
-            setLoading(false);
-        }
+            const [connectionResult, healthResult] = await Promise.allSettled([
+                getEstadoOracle(),
+                getSaludOracle(),
+            ]);
+            setConnectionRequestFailed(connectionResult.status === 'rejected');
+            setOracleConnection(connectionResult.status === 'fulfilled' ? connectionResult.value : null);
+            if (healthResult.status === 'rejected') throw healthResult.reason;
+            const data = healthResult.value, now = new Date();
+            setHealth(data); setError(''); setLastUpdated(now);
+            setHistory((previous) => [...previous, { hora: now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), isbd: Number(data.isbd) || 0 }].slice(-12));
+        } catch (requestError) { setError(requestError.message || 'No se pudo consultar la salud de Oracle.'); }
+        finally { setLoading(false); setRefreshing(false); }
+    }, []);
+    useEffect(() => { loadHealth(); const interval = window.setInterval(loadHealth, 15000); return () => window.clearInterval(interval); }, [loadHealth]);
+    const metrics = health?.metricas || [];
+    const metricsByComponent = useMemo(() => Object.keys(COMPONENTS).reduce((groups, component) => ({ ...groups, [component]: metrics.filter((metric) => metric.componente === component) }), {}), [metrics]);
+
+    if (loading) return <div className="monitor-state-card"><span className="monitor-loader" /><h2>Conectando con Oracle</h2><p>Consultando las vistas de rendimiento…</p></div>;
+    if (!health) return <div className="monitor-state-card is-error"><h2>No fue posible leer Oracle</h2><p>{error || 'El backend no devolvió datos.'}</p><button className="monitor-refresh-button" onClick={() => loadHealth(true)}>Reintentar conexión</button></div>;
+
+    const scores = { Procesos: Number(health.ip) || 0, Memoria: Number(health.im) || 0, Archivos: Number(health.ia) || 0 };
+    const backendStatus = normalizeStatus(health.estado, scoreStatus(health.isbd));
+    const hasCritical = metrics.some((metric) => !METRIC_DEFS[metric.label]?.reference && metricStatus(metric) === 'critical');
+    const globalStatus = hasCritical ? 'critical' : backendStatus, selectedDef = COMPONENTS[selectedComponent];
+    const selectedMetrics = metricsByComponent[selectedComponent] || [], selectedStatus = scoreStatus(scores[selectedComponent]);
+    const statusCounts = selectedMetrics.reduce((counts, metric) => { if (!METRIC_DEFS[metric.label]?.reference) counts[metricStatus(metric)] += 1; return counts; }, { normal: 0, warning: 0, degraded: 0, critical: 0 });
+    const oracleState = connectionState(oracleConnection, connectionRequestFailed);
+    const companyName = 'NovaTech Solutions S.A.';
+    const databaseName = 'ORCL-PROD-01';
+    // El frontend ya trabaja como una colección. Hoy contiene un cliente;
+    // cuando el backend entregue más, se agregan a este arreglo sin cambiar la vista.
+    const monitoredClients = [{
+        id: 'oracle-1', companyName, databaseName, health, scores,
+        globalStatus, oracleState, lastUpdated,
+    }];
+    const chartData = monitoredClients.map((client, index) => ({
+        nombre: `C${index + 1}`,
+        cliente: client.companyName,
+        indice: Number(client.health.isbd) || 0,
+        status: client.globalStatus,
+    }));
+    const statusTotals = monitoredClients.reduce((totals, client) => {
+        totals[client.globalStatus] += 1;
+        return totals;
+    }, { optimal: 0, healthy: 0, warning: 0, degraded: 0, critical: 0 });
+    const openDetail = (view) => {
+        if (view !== 'indice') setSelectedComponent(view);
+        setDetailView(view);
+        window.setTimeout(() => document.getElementById('monitor-real-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     };
 
-    useEffect(() => {
-        cargar();
-        const t = setInterval(cargar, 15000);
-        return () => clearInterval(t);
-    }, []);
-
-    if (loading) return <p style={{ color: 'var(--muted)' }}>Conectando con la instancia Oracle...</p>;
-    if (error || !salud) {
-        return (
-            <div>
-                <div className="monitor-section-title"><div><span className="mono">MONITOR ORACLE</span><h2>Salud de la base de datos</h2></div></div>
-                <div className="chart-card" style={{ borderColor: 'var(--monitor-critical)' }}>
-                    <p style={{ color: 'var(--monitor-critical)' }}>{error || 'Sin datos'}</p>
-                </div>
-            </div>
-        );
-    }
-
-    const estadoGlobal = salud.estado || 'healthy';
-    const porComp = (c) => (salud.metricas || []).filter((m) => m.componente === c);
-
     return (
-        <div>
-            <div className="monitor-section-title">
-                <div><span className="mono">MONITOR ORACLE · EN VIVO</span><h2>Salud de la instancia Oracle</h2></div>
-                <b>{salud.isbd}</b>
-            </div>
+        <div className="monitor-page">
+            <header className="monitor-page-header">
+                <div><span className="monitor-kicker mono">ORACLE DATABASE · TIEMPO REAL</span><h1>Monitor de Salud de Oracle</h1><p>Datos técnicos → indicadores → análisis → ISBD → alertas → decisión.</p></div>
+                <div className="monitor-header-actions"><StatusLegend /><span className="monitor-live-badge mono"><i /> ACTUALIZACIÓN ACTIVA</span></div>
+            </header>
 
-            <div className={`category-summary status-${estadoGlobal}`} style={{ marginBottom: 20 }}>
-                <div>
-                    <span className="detail-eyebrow mono">ISBD · ÍNDICE DE SALUD · 0.30(IP)+0.35(IM)+0.35(IA)</span>
-                    <strong>{salud.isbd}<small>/100</small></strong>
-                    <p>Estado global: <b style={{ color: statusInfo[estadoGlobal]?.color }}>{statusInfo[estadoGlobal]?.label}</b></p>
-                </div>
-                <TrafficLight status={estadoGlobal} />
-                <div className="category-counts">
-                    <span><i className="legend-dot normal" /><b>{salud.ip}</b>IP</span>
-                    <span><i className="legend-dot normal" /><b>{salud.im}</b>IM</span>
-                    <span><i className="legend-dot normal" /><b>{salud.ia}</b>IA</span>
-                </div>
-            </div>
+            {error && <div className="monitor-stale-warning">La última actualización falló: {error}. Se conservan los datos anteriores.</div>}
 
-            {historial.length > 1 && (
-                <div className="chart-card" style={{ marginBottom: 24 }}>
-                    <ResponsiveContainer width="100%" height={200}>
-                        <LineChart data={historial}>
-                            <CartesianGrid stroke="var(--line)" vertical={false} />
-                            <XAxis dataKey="hora" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} />
-                            <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} />
-                            <Tooltip />
-                            <Line type="monotone" dataKey="isbd" stroke={statusInfo[estadoGlobal]?.color} strokeWidth={3} dot={{ r: 3 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
+            <section className="monitor-hero-grid">
+                <div className="monitor-chart-card">
+                    <div className="monitor-section-title"><div><span className="mono">COMPARATIVO</span><h2>ISBD por cliente</h2></div><small>0.30(IP) + 0.35(IM) + 0.35(IA)</small></div>
+                    <div className="health-chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}><CartesianGrid stroke="var(--line)" vertical={false} /><XAxis dataKey="nombre" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} /><YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} /><Tooltip content={<MonitorTooltip />} cursor={{ fill: 'rgba(180, 144, 255, 0.05)' }} /><Bar dataKey="indice" radius={[6, 6, 2, 2]} maxBarSize={54}><Cell fill={statusInfo[globalStatus].color} /></Bar></BarChart></ResponsiveContainer></div>
                 </div>
+                <div className="monitor-summary-card">
+                    <div className="monitor-section-title"><div><span className="mono">RESUMEN</span><h2>Estado real de la red</h2></div><b>{monitoredClients.length}</b></div>
+                    <p className="summary-caption">Instancias conectadas</p>
+                    <div className="summary-statuses">{Object.entries(statusTotals).map(([status, total]) => <div key={status} className={`summary-status ${status}`}><TrafficLight status={status} compact /><span><strong>{total}</strong><small>{statusInfo[status].label}</small></span></div>)}</div>
+                    <div className="summary-progress">{Object.entries(statusTotals).map(([status, total]) => total > 0 && <i key={status} className={status} style={{ width: `${(total / monitoredClients.length) * 100}%` }} />)}</div>
+                </div>
+            </section>
+
+            <section className="clients-section">
+                <div className="monitor-section-title clients-title"><div><span className="mono">INSTANCIAS</span><h2>Clientes monitoreados</h2></div><small>Selecciona un cliente o indicador para ampliar</small></div>
+                <div className="monitor-client-grid">
+                    {monitoredClients.map((client) => <CompanyCard key={client.id} companyName={client.companyName} databaseName={client.databaseName} health={client.health} scores={client.scores} globalStatus={client.globalStatus} oracleState={client.oracleState} lastUpdated={client.lastUpdated} onOpen={openDetail} />)}
+                </div>
+            </section>
+
+            {detailView && (
+                <section id="monitor-real-detail" className="monitor-detail-panel">
+                    <header className="monitor-detail-header">
+                        <div><button className="detail-back" onClick={() => setDetailView(null)}>← Volver a empresa</button><span className="detail-instance mono">{databaseName} · DATOS REALES</span><h2>{companyName}</h2></div>
+                        <div className="detail-tabs" role="tablist"><button className={detailView === 'indice' ? 'active' : ''} onClick={() => setDetailView('indice')}>ISBD</button>{Object.entries(COMPONENTS).map(([component, definition]) => <button key={component} className={detailView === component ? 'active' : ''} onClick={() => { setSelectedComponent(component); setDetailView(component); }}>{definition.code} · {component}</button>)}</div>
+                        <button className="detail-close" aria-label="Cerrar detalle" onClick={() => setDetailView(null)}>×</button>
+                    </header>
+
+                    {detailView === 'indice' ? (
+                        <div className="monitor-overview-wrapper">
+                            <div className="monitor-overview-detail">
+                                <section className="overview-score-panel">
+                                    <span className="detail-eyebrow mono">ISBD · ÍNDICE GLOBAL</span>
+                                    <HealthRing score={health.isbd} status={globalStatus} />
+                                    <strong className={`status-text ${globalStatus}`}>ESTADO REAL: {statusInfo[globalStatus].label}</strong>
+                                    {hasCritical && backendStatus !== 'critical' && <p className="critical-override">Una métrica crítica prevalece sobre el promedio.</p>}
+                                    <p className="health-formula mono">0.30(IP) + 0.35(IM) + 0.35(IA)</p>
+                                </section>
+                                <section className="overview-categories">
+                                    <div className="overview-intro">
+                                        <div><span className="detail-eyebrow mono">INDICADORES PONDERADOS</span><h3>Procesos, memoria y archivos</h3></div>
+                                        <p>Selecciona un componente para consultar variables, umbrales y fuentes Oracle.</p>
+                                    </div>
+                                    <div className="overview-category-grid">
+                                        {Object.entries(COMPONENTS).map(([component, definition]) => {
+                                            const componentScore = scores[component];
+                                            const componentStatus = scoreStatus(componentScore);
+                                            const alertCount = (metricsByComponent[component] || []).filter((metric) => !METRIC_DEFS[metric.label]?.reference && metricStatus(metric) !== 'normal').length;
+                                            return <button key={component} className={`overview-category status-${componentStatus}`} onClick={() => openDetail(component)}>
+                                                <div className="overview-category-title"><TrafficLight status={componentStatus} compact /><span><small>{definition.code} · peso {definition.weight}%</small><strong>{componentScore}/100</strong></span></div>
+                                                <div className="overview-category-bar"><i style={{ width: `${componentScore}%` }} /></div>
+                                                <p>{alertCount === 0 ? 'Todas las variables normales' : `${alertCount} ${alertCount === 1 ? 'variable requiere' : 'variables requieren'} atención`}</p>
+                                                <span className="category-link"><span>Ver {component.toLowerCase()}</span><b>→</b></span>
+                                            </button>;
+                                        })}
+                                    </div>
+                                </section>
+                            </div>
+                            <AlertsPanel metrics={metrics} onSelectComponent={(component) => COMPONENTS[component] && openDetail(component)} />
+                            <section className="monitor-history-panel"><div className="overview-intro"><div><span className="detail-eyebrow mono">EVOLUCIÓN DE LA SESIÓN</span><h3>ISBD en las últimas 12 lecturas</h3></div><p>Se actualiza con cada consulta real.</p></div><div className="history-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={history} margin={{ top: 8, right: 18, left: -20, bottom: 0 }}><CartesianGrid stroke="var(--line)" vertical={false} /><XAxis dataKey="hora" axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} /><YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'var(--muted)', fontSize: 11 }} /><Tooltip content={<HistoryTooltip />} /><Line type="monotone" dataKey="isbd" stroke={statusInfo[globalStatus].color} strokeWidth={3} dot={{ r: 3 }} /></LineChart></ResponsiveContainer></div></section>
+                        </div>
+                    ) : (
+                        <div className="category-detail"><div className={`category-summary status-${selectedStatus}`}><div><span className="detail-eyebrow mono">{selectedDef.code} · PESO {selectedDef.weight}%</span><strong>{scores[selectedComponent]}<small>/100</small></strong><p>{selectedDef.description}</p></div><TrafficLight status={selectedStatus} /><div className="category-counts">{Object.entries(statusCounts).map(([status, total]) => <span key={status}><i className={`legend-dot ${status}`} /><b>{total}</b>{metricStatusLabel[status]}</span>)}</div></div><div className="oracle-source-banner"><span>Vistas Oracle utilizadas</span><b className="mono">{selectedDef.source}</b></div>{selectedMetrics.length ? <div className="metric-grid">{selectedMetrics.map((metric, index) => <MetricCard key={`${metric.label}-${index}`} metric={metric} />)}</div> : <div className="alert-empty">El backend no devolvió métricas para {selectedComponent}.</div>}</div>
+                    )}
+                </section>
             )}
-
-            <ComponenteReal codigo="IP · PROCESOS · PESO 30%" label="Procesos" valor={salud.ip} metricas={porComp('Procesos')} />
-            <ComponenteReal codigo="IM · MEMORIA · PESO 35%" label="Memoria" valor={salud.im} metricas={porComp('Memoria')} />
-            <ComponenteReal codigo="IA · ARCHIVOS · PESO 35%" label="Archivos" valor={salud.ia} metricas={porComp('Archivos')} />
         </div>
     );
 }
