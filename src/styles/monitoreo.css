@@ -5,15 +5,10 @@
     --monitor-warning: #fbbf24;
     --monitor-degraded: #fb923c;
     --monitor-critical: #f87171;
-
-    /* Valores predeterminados para propiedades dinámicas */
-    --ring-color: var(--monitor-normal);
-    --score: 0deg;
-    --lamp-color: var(--monitor-normal);
-
     max-width: 1480px;
     margin: 0 auto;
 }
+
 .monitor-page-header,
 .monitor-detail-header,
 .monitor-section-title,
