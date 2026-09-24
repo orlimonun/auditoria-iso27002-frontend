@@ -1,0 +1,166 @@
+/* ===========================================================================
+   Monitor v2 · piezas del arbol de tres niveles
+   Se carga DESPUES de monitoreo.css y solo agrega lo que no existia.
+   Usa las mismas variables de color del tema, asi que no hay que tocar nada.
+   =========================================================================== */
+
+/* --- Banda de causas criticas ------------------------------------------- */
+.causas-criticas {
+    border: 1px solid var(--monitor-critical, #f87171);
+    border-left-width: 4px;
+    border-radius: 10px;
+    background: rgba(248, 113, 113, 0.07);
+    padding: 14px 18px;
+    margin-bottom: 18px;
+}
+.causas-criticas h4 {
+    margin: 0 0 8px;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--monitor-critical, #f87171);
+}
+.causas-criticas ul { margin: 0; padding-left: 18px; }
+.causas-criticas li { margin: 4px 0; font-size: 0.9rem; line-height: 1.45; }
+.causas-criticas .causa-nota {
+    margin-top: 10px; font-size: 0.8rem; color: var(--muted, #94a3b8);
+}
+
+/* --- Aviso de agregacion por peor caso ---------------------------------- */
+.nota-agregacion {
+    display: flex; gap: 10px; align-items: flex-start;
+    border: 1px dashed var(--line, #2a3348);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--muted, #94a3b8);
+}
+.nota-agregacion b { color: inherit; }
+.nota-agregacion .agregacion-pill {
+    flex: 0 0 auto;
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line, #2a3348);
+}
+
+/* --- Comparacion de indice topado vs ponderado --------------------------- */
+.isbd-doble {
+    margin-top: 10px; font-size: 0.82rem; line-height: 1.5;
+    color: var(--muted, #94a3b8);
+}
+.isbd-doble b { color: var(--monitor-critical, #f87171); }
+
+/* --- Cabecera de grupo (nivel 2) ---------------------------------------- */
+.grupo-bloque { margin-bottom: 14px; border: 1px solid var(--line, #2a3348); border-radius: 12px; overflow: hidden; }
+.grupo-head {
+    width: 100%; display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; background: transparent; border: 0; cursor: pointer;
+    color: inherit; text-align: left;
+}
+.grupo-head:hover { background: rgba(148, 163, 184, 0.06); }
+.grupo-head .chev { transition: transform 0.15s ease; opacity: 0.6; }
+.grupo-head.abierto .chev { transform: rotate(90deg); }
+.grupo-head strong { font-size: 0.95rem; }
+.grupo-head .grupo-meta {
+    margin-left: auto; display: flex; align-items: center; gap: 14px;
+    font-size: 0.78rem; color: var(--muted, #94a3b8);
+    font-family: ui-monospace, monospace;
+}
+.grupo-head .grupo-puntaje { font-size: 1rem; font-weight: 700; }
+
+/* --- Tabla de variables (nivel 3) --------------------------------------- */
+.tabla-variables { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.tabla-variables thead th {
+    text-align: left; padding: 8px 14px;
+    font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted, #94a3b8); font-weight: 600;
+    border-top: 1px solid var(--line, #2a3348);
+    border-bottom: 1px solid var(--line, #2a3348);
+    background: rgba(148, 163, 184, 0.04);
+}
+.tabla-variables td { padding: 9px 14px; border-bottom: 1px solid var(--line, #2a3348); vertical-align: middle; }
+.tabla-variables tbody tr.fila-var { cursor: pointer; }
+.tabla-variables tbody tr.fila-var:hover { background: rgba(148, 163, 184, 0.05); }
+.tabla-variables .col-codigo { font-family: ui-monospace, monospace; opacity: 0.55; width: 46px; }
+.tabla-variables .col-valor { font-family: ui-monospace, monospace; font-weight: 700; text-align: right; white-space: nowrap; }
+.tabla-variables .col-limite { font-family: ui-monospace, monospace; text-align: right; color: var(--muted, #94a3b8); white-space: nowrap; }
+.tabla-variables .col-estado { width: 118px; }
+.tabla-variables .fila-referencia td { opacity: 0.6; }
+
+.pill-estado {
+    display: inline-block; padding: 2px 9px; border-radius: 999px;
+    font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700;
+    border: 1px solid currentColor;
+}
+.pill-estado.normal      { color: var(--monitor-normal, #4ade80); }
+.pill-estado.warning     { color: var(--monitor-warning, #fbbf24); }
+.pill-estado.degraded    { color: var(--monitor-degraded, #fb923c); }
+.pill-estado.critical    { color: var(--monitor-critical, #f87171); }
+.pill-estado.referencia  { color: var(--muted, #94a3b8); border-style: dashed; }
+
+.pill-fuente {
+    display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 4px;
+    font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid var(--line, #2a3348); color: var(--muted, #94a3b8);
+    font-family: ui-monospace, monospace;
+}
+.pill-fuente.documento { border-color: var(--monitor-normal, #4ade80); color: var(--monitor-normal, #4ade80); }
+.pill-fuente.revision  { border-color: var(--blue, #60a5fa);          color: var(--blue, #60a5fa); }
+.pill-fuente.medicion  { border-color: var(--violet, #b490ff);        color: var(--violet, #b490ff); }
+.pill-fuente.convencion{ border-color: var(--monitor-warning, #fbbf24); color: var(--monitor-warning, #fbbf24); }
+
+/* --- Fila expandida: consulta, ayuda, remediacion y detalle fisico ------- */
+.fila-detalle td { background: rgba(148, 163, 184, 0.04); padding: 0 14px 16px; }
+.detalle-caja { padding-top: 12px; display: grid; gap: 14px; }
+.detalle-bloque h5 {
+    margin: 0 0 6px; font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted, #94a3b8);
+}
+.detalle-bloque p { margin: 0; font-size: 0.85rem; line-height: 1.55; }
+.consulta-sql {
+    margin: 0; padding: 10px 12px; border-radius: 8px;
+    background: rgba(0, 0, 0, 0.28); border: 1px solid var(--line, #2a3348);
+    font-family: ui-monospace, monospace; font-size: 0.76rem; line-height: 1.5;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+}
+.remediacion {
+    border-left: 3px solid var(--monitor-warning, #fbbf24);
+    padding: 8px 12px; border-radius: 0 8px 8px 0;
+    background: rgba(251, 191, 36, 0.07);
+    font-family: ui-monospace, monospace; font-size: 0.78rem; line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+/* --- Nivel 4: origen fisico --------------------------------------------- */
+.tabla-origen { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.tabla-origen th {
+    text-align: left; padding: 6px 10px; font-size: 0.66rem;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--muted, #94a3b8); border-bottom: 1px solid var(--line, #2a3348);
+}
+.tabla-origen td { padding: 6px 10px; border-bottom: 1px solid var(--line, #2a3348); }
+.tabla-origen .ruta {
+    font-family: ui-monospace, monospace; font-size: 0.72rem;
+    color: var(--muted, #94a3b8); word-break: break-all;
+}
+.tabla-origen .valor { font-family: ui-monospace, monospace; text-align: right; font-weight: 700; }
+.tabla-origen tr.peor td { background: rgba(248, 113, 113, 0.08); }
+
+/* --- Badges de la tarjeta de instancia ---------------------------------- */
+.badge-origen {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 0.64rem; letter-spacing: 0.07em; text-transform: uppercase;
+    border: 1px solid var(--line, #2a3348); color: var(--muted, #94a3b8);
+    font-family: ui-monospace, monospace; margin-left: 8px;
+}
+
+@media (max-width: 720px) {
+    .tabla-variables .col-limite { display: none; }
+    .grupo-head .grupo-meta { gap: 8px; font-size: 0.7rem; }
+}
